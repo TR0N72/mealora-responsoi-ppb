@@ -8,15 +8,18 @@ if (!JWT_SECRET) {
   throw new Error('SUPABASE_JWT_SECRET is required.');
 }
 
-export type AuthenticatedRequest = Request & {
+export interface AuthenticatedRequest extends Request {
   user?: any;
-};
+  headers: any;
+  params: any;
+  body: any;
+}
 
 export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const token = (req.headers as any).authorization?.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ message: 'Authentication token is missing.' });
+    return (res as any).status(401).json({ message: 'Authentication token is missing.' });
   }
 
   try {
@@ -24,6 +27,6 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid authentication token.' });
+    return (res as any).status(401).json({ message: 'Invalid authentication token.' });
   }
 };

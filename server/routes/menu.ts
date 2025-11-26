@@ -68,20 +68,20 @@ menuRouter.get(
 
 // Middleware to check if user is admin
 const isAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = (req as any).headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+    return (res as any).status(401).json({ message: "No token provided" });
   }
 
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { role: string };
     if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
+      return (res as any).status(403).json({ message: "Admin access required" });
     }
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+    return (res as any).status(401).json({ message: "Invalid token" });
   }
 };
 
