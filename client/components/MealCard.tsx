@@ -1,3 +1,5 @@
+import LazyImage from "./LazyImage";
+
 interface MealCardProps {
   name: string;
   image: string;
@@ -26,16 +28,16 @@ export default function MealCard({ name, image, imageRotation = false, discount 
           </span>
         </div>
       )}
-      
+
       <div className="w-full border border-black rounded-[25px] bg-[#CFFD3B] pt-6 pb-3 overflow-hidden">
         <div className="flex items-center justify-center px-4">
-          <img
+          <LazyImage
             src={image}
             alt={name}
             className="w-auto max-w-full h-[175px] object-contain drop-shadow-[0_8px_4px_rgba(0,0,0,0.25)]"
           />
         </div>
-        
+
         <div className="w-full border-t border-black bg-white rounded-b-[25px] py-3">
           <h3 className="font-arial-rounded text-2xl text-center text-black">
             {name}

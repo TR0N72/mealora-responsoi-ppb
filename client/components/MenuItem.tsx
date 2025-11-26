@@ -2,6 +2,7 @@ import { Heart, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/components/ui/use-toast";
 import { useFavorites } from "@/context/FavoritesContext";
+import LazyImage from "./LazyImage";
 
 interface MenuItemProps {
   id?: string;
@@ -78,7 +79,7 @@ export default function MenuItem({
           className="w-full border-x border-black overflow-hidden flex items-center justify-center pt-6 pb-3"
           style={{ backgroundColor: bgColor }}
         >
-          <img
+          <LazyImage
             src={image}
             alt={name}
             className={`w-auto max-w-full h-[175px] object-contain drop-shadow-[0_8px_4px_rgba(0,0,0,0.25)] transition-transform duration-300 hover:scale-110 ${imageRotation ? "rotate-12" : ""
