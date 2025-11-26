@@ -8,9 +8,9 @@ if (!JWT_SECRET) {
   throw new Error('SUPABASE_JWT_SECRET is required.');
 }
 
-export interface AuthenticatedRequest extends Request {
+export type AuthenticatedRequest = Request & {
   user?: any;
-}
+};
 
 export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];

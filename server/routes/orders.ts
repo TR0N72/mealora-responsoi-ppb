@@ -147,10 +147,13 @@ ordersRouter.post(
           unit_price: item.unit_price,
         });
 
-        await supabase
-          .from("menus")
-          .update({ stock_quantity: supabase.sql`stock_quantity - ${item.quantity}` })
-          .eq("id", item.menu_id);
+        const menuItem = menuItems.find((m) => m.id === item.menu_id);
+        if (menuItem) {
+          await supabase
+            .from("menus")
+            .update({ stock_quantity: menuItem.stock_quantity - item.quantity })
+            .eq("id", item.menu_id);
+        }
       }
 
       res.status(201).json({ order_id });
@@ -202,10 +205,18 @@ ordersRouter.patch(
 
       // Replenish stock for each item
       for (const item of orderItems) {
-        await supabase
+        const { data: menuItem } = await supabase
           .from("menus")
-          .update({ stock_quantity: supabase.sql`stock_quantity + ${item.quantity}` })
-          .eq("id", item.menu_id);
+          .select("stock_quantity")
+          .eq("id", item.menu_id)
+          .single();
+
+        if (menuItem) {
+          await supabase
+            .from("menus")
+            .update({ stock_quantity: menuItem.stock_quantity + item.quantity })
+            .eq("id", item.menu_id);
+        }
       }
 
       res.json({ message: "Order cancelled and stock replenished." });
