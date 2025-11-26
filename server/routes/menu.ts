@@ -5,13 +5,15 @@ import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import os from "os";
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = "uploads";
+    // Use /tmp for Vercel compatibility
+    const uploadDir = path.join(os.tmpdir(), "uploads");
     if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
@@ -31,38 +33,53 @@ menuRouter.get(
   query("dietary_tags").optional().isArray(),
   query("category").optional().isString(),
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { date, dietary_tags, category } = req.query;
+
+      let queryBuilder = supabase.from("menus").select("*");
+
+      if (date) {
+        // Ensure date is handled correctly (supabase expects string for DATE types usually)
+        // If date is a Date object, toISOString() gives full timestamp.
+        // If column is DATE, we might want YYYY-MM-DD.
+        // For now let's trust supabase-js handles Date or use the string if it wasn't converted?
+        // express-validator toDate() converts to Date.
+        queryBuilder = queryBuilder.eq("available_date", (date as Date).toISOString());
+      }
+
+      if (dietary_tags) {
+        queryBuilder = queryBuilder.contains("dietary_tags", dietary_tags);
+      }
+
+      if (category) {
+        queryBuilder = queryBuilder.eq("category", category);
+      }
+
+      const { data, error } = await queryBuilder;
+
+      if (error) {
+        console.error("Supabase error fetching menu:", error);
+        return res.status(500).json({ error: error.message, details: error });
+      }
+
+      if (!data || data.length === 0) {
+        // Return empty array instead of 404 for list endpoint is often better, but keeping 404 if that's desired.
+        // Actually, returning 404 for "no items" in a list query is sometimes treated as error by clients.
+        // Let's return empty array if it's a search?
+        // The original code returned 404.
+        return res.status(404).json({ message: "No menu items found." });
+      }
+
+      res.json(data);
+    } catch (err: any) {
+      console.error("Unexpected error in GET /menu:", err);
+      res.status(500).json({ message: "Internal server error", error: err.message });
     }
-
-    const { date, dietary_tags, category } = req.query;
-
-    let queryBuilder = supabase.from("menus").select("*");
-
-    if (date) {
-      queryBuilder = queryBuilder.eq("available_date", date);
-    }
-
-    if (dietary_tags) {
-      queryBuilder = queryBuilder.contains("dietary_tags", dietary_tags);
-    }
-
-    if (category) {
-      queryBuilder = queryBuilder.eq("category", category);
-    }
-
-    const { data, error } = await queryBuilder;
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({ message: "No menu items found." });
-    }
-
-    res.json(data);
   }
 );
 
