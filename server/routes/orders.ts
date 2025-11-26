@@ -1,7 +1,7 @@
 import express from "express";
 import { body, param, validationResult } from "express-validator";
-import { supabase } from "../lib/supabase";
-import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
+import { supabase } from "../lib/supabase.js";
+import { authMiddleware, AuthenticatedRequest } from "../middleware/auth.js";
 
 export const ordersRouter = express.Router();
 

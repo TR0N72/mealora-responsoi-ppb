@@ -1,6 +1,6 @@
 import express from "express";
 import { body, query, validationResult } from "express-validator";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase.js";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import path from "path";
