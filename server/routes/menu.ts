@@ -79,7 +79,7 @@ const isAdmin = async (req: express.Request, res: express.Response, next: expres
     if (decoded.role !== "admin") {
       return (res as any).status(403).json({ message: "Admin access required" });
     }
-    next();
+    (next as any)();
   } catch (error) {
     return (res as any).status(401).json({ message: "Invalid token" });
   }
