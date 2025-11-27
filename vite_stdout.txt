@@ -9,3 +9,5 @@
 [2m02.37.59[22m [36m[1m[vite][22m[39m server restarted.
 [2m02.45.06[22m [36m[1m[vite][22m[39m [32mserver/routes/menu.ts changed, restarting server...[39m
 [2m02.45.06[22m [36m[1m[vite][22m[39m server restarted.
+[2m02.49.31[22m [36m[1m[vite][22m[39m [32mserver/routes/menu.ts changed, restarting server...[39m
+[2m02.49.31[22m [36m[1m[vite][22m[39m server restarted.

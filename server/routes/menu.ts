@@ -8,23 +8,32 @@ import fs from "fs";
 import os from "os";
 
 // Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Save to local uploads directory so they can be served via express.static
-    const uploadDir = path.join(process.cwd(), "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
 export const menuRouter = express.Router();
+
+// Helper function to upload to Supabase Storage
+async function uploadToSupabase(file: Express.Multer.File): Promise<string> {
+  const filename = `${Date.now()}-${file.originalname}`;
+  const { data, error } = await supabase.storage
+    .from('menu_items') // Ensure this bucket exists in Supabase
+    .upload(filename, file.buffer, {
+      contentType: file.mimetype,
+      upsert: true,
+    });
+
+  if (error) {
+    throw new Error(`Supabase storage upload failed: ${error.message}`);
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from('menu_items')
+    .getPublicUrl(filename);
+
+  return publicUrlData.publicUrl;
+}
 
 // GET /api/v1/menu - Get menu items
 menuRouter.get(
@@ -136,10 +145,12 @@ menuRouter.post(
 
     let finalImage = imageUrl;
     if (req.file) {
-      // If file uploaded, use the file path
-      // Assuming server runs on same host/port, we construct relative path
-      // In production, you'd want a full URL or handle this on client
-      finalImage = `/uploads/${req.file.filename}`;
+      try {
+        finalImage = await uploadToSupabase(req.file);
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
     }
 
     const { data, error } = await supabase
@@ -197,7 +208,12 @@ menuRouter.put(
 
     let finalImage = imageUrl;
     if (req.file) {
-      finalImage = `/uploads/${req.file.filename}`;
+       try {
+        finalImage = await uploadToSupabase(req.file);
+      } catch (error: any) {
+        console.error("Upload error:", error);
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
     }
 
     const updateData: any = {};
