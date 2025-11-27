@@ -33,7 +33,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Validation error', errors: error.errors });
     }
     console.error('Register error:', error);
-    import('fs').then(fs => fs.appendFileSync('server-error.log', `${new Date().toISOString()} - Register error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))} \n`));
+    try {
+      const fs = await import('fs');
+      fs.appendFileSync('server-error.log', `${new Date().toISOString()} - Register error: ${JSON.stringify(error, Object.getOwnPropertyNames(error))} \n`);
+    } catch (logError) {
+      console.error('Failed to write to server-error.log:', logError);
+    }
     res.status(500).json({ message: 'Internal server error' });
   }
 });
