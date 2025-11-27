@@ -10,8 +10,8 @@ import os from "os";
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Use /tmp for Vercel compatibility
-    const uploadDir = path.join(os.tmpdir(), "uploads");
+    // Save to local uploads directory so they can be served via express.static
+    const uploadDir = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
