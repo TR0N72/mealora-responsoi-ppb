@@ -1,19 +1,47 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HeroSlider from "@/components/HeroSlider";
 import MealCard from "@/components/MealCard";
+import { Loader2 } from "lucide-react";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  dietary_tags?: string[];
+}
 
 export default function Index() {
+  const { data: menuItems, isLoading } = useQuery<MenuItem[]>({
+    queryKey: ['menu'],
+    queryFn: async () => {
+      const response = await fetch('/api/v1/menu');
+      if (!response.ok) {
+        // If 404 (no items), return empty array
+        if (response.status === 404) return [];
+        throw new Error('Failed to fetch menu');
+      }
+      return response.json();
+    },
+  });
+
+  // Duplicate items to create seamless loop
+  const carouselItems = menuItems ? [...menuItems, ...menuItems, ...menuItems, ...menuItems] : [];
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
+
       <main>
         <section className="py-8">
           <HeroSlider />
         </section>
-        
+
         <section className="py-12 md:py-16 px-4">
           <div className="max-w-[1273px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
             <div>
@@ -34,31 +62,48 @@ export default function Index() {
             </div>
           </div>
         </section>
-        
-        <section className="py-12 md:py-16 px-4">
+
+        <section className="py-12 md:py-16 overflow-hidden">
           <h2 className="font-modak text-[40px] md:text-[64px] leading-tight text-center text-black mb-8 md:mb-12 max-w-[745px] mx-auto stroke-black stroke-1">
             Weekly Recommendation
           </h2>
 
-          <div className="max-w-[1309px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12 mb-12 md:mb-16">
-            <MealCard
-              name="Cashew Chicken"
-              image="https://api.builder.io/api/v1/image/assets/TEMP/a0fdb78a3bc8f128fea48c348e6f0f008932f1a6?width=542"
-              discount="20%"
-            />
-            <MealCard
-              name="Soy Glazed Chicken"
-              image="https://api.builder.io/api/v1/image/assets/TEMP/245de98dd49afeee793fa1fe150c3ec0a13100c8?width=377"
-              imageRotation={true}
-            />
-            <MealCard
-              name="Parmesan Kale Pasta"
-              image="https://api.builder.io/api/v1/image/assets/TEMP/3360c98403f97e6f769348e00625840135fde72c?width=363"
-              imageRotation={true}
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          ) : (
+            <div className="relative w-full">
+              <motion.div
+                className="flex gap-8 lg:gap-12 w-max"
+                animate={{ x: "-50%" }}
+                transition={{
+                  repeat: Infinity,
+                  ease: "linear",
+                  duration: 60,
+                  repeatType: "loop"
+                }}
+              >
+                {carouselItems.map((item, index) => {
+                  // Find discount tag if any (e.g., "20% OFF")
+                  const discountTag = item.dietary_tags?.find(tag => tag.includes('%'));
 
-          <div className="flex justify-center">
+                  return (
+                    <div key={`${item.id}-${index}`} className="w-[300px] md:w-[350px] flex-shrink-0">
+                      <MealCard
+                        name={item.name}
+                        image={item.image}
+                        discount={discountTag}
+                        imageRotation={index % 2 !== 0}
+                      />
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </div>
+          )}
+
+          <div className="flex justify-center mt-12 md:mt-16">
             <Link
               to="/menu"
               className="inline-flex items-center justify-center px-8 md:px-10 py-4 md:py-5 bg-black text-white font-arial-rounded text-[15px] md:text-[17px] rounded-full hover:bg-black/90 transition-colors"
@@ -68,7 +113,7 @@ export default function Index() {
           </div>
         </section>
       </main>
-      
+
       <Footer />
     </div>
   );
