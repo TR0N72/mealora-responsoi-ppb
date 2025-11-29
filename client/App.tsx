@@ -23,6 +23,7 @@ import Admin from "@/pages/Admin";
 const queryClient = new QueryClient();
 
 import Favorites from "@/pages/Favorites";
+import BottomNav from "@/components/BottomNav";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,6 +46,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <BottomNav />
           </BrowserRouter>
         </TooltipProvider>
       </FavoritesProvider>

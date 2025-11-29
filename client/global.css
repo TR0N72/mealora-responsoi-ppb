@@ -138,3 +138,9 @@
     -webkit-text-stroke-width: 1px;
   }
 }
+
+@media (max-width: 768px) {
+  body {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
