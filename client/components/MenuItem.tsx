@@ -30,7 +30,8 @@ export default function MenuItem({
   const isLiked = isFavorite(name);
 
   const handleAddToCart = () => {
-    addToCart({ name, price, image });
+    if (!id) return;
+    addToCart({ id, name, price, image });
     toast({
       title: "Added to cart",
       description: `${name} has been added to your cart.`,

@@ -38,6 +38,11 @@ export default function Cart() {
 
     setLoading(true);
     try {
+      const deliveryStart = new Date();
+      deliveryStart.setHours(deliveryStart.getHours() + 25); // 25 hours from now
+      const deliveryEnd = new Date(deliveryStart);
+      deliveryEnd.setHours(deliveryEnd.getHours() + 1);
+
       const response = await fetch('/api/v1/orders', {
         method: 'POST',
         headers: {
@@ -45,12 +50,15 @@ export default function Cart() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          items: items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: parseInt(item.price.replace(/[^0-9]/g, '')) * 1000
-          })),
-          totalPrice
+          items: items
+            .filter(item => item.id)
+            .map(item => ({
+              menu_id: item.id,
+              quantity: item.quantity,
+              // price is calculated on server
+            })),
+          delivery_window_start: deliveryStart.toISOString(),
+          delivery_window_end: deliveryEnd.toISOString()
         })
       });
 

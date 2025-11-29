@@ -12,6 +12,9 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const menuSchema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -28,6 +31,17 @@ interface MenuItemData {
     price: number;
     image: string;
     category: string;
+}
+
+interface OrderData {
+    id: string;
+    status: string;
+    total_price: number;
+    created_at: string;
+    users: {
+        email: string;
+        username: string;
+    };
 }
 
 export default function Admin() {
@@ -58,6 +72,19 @@ export default function Admin() {
         queryFn: async () => {
             const response = await fetch('/api/v1/menu');
             if (!response.ok) throw new Error('Failed to fetch menu');
+            return response.json();
+        },
+    });
+
+    const { data: orders, isLoading: isLoadingOrders } = useQuery<OrderData[]>({
+        queryKey: ['admin-orders'],
+        queryFn: async () => {
+            const response = await fetch('/api/v1/orders/all', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch orders');
             return response.json();
         },
     });
@@ -238,138 +265,190 @@ export default function Admin() {
             <main className="py-12 px-4 max-w-[1273px] mx-auto">
                 <h1 className="font-modak text-4xl mb-8">Admin Dashboard</h1>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Add/Edit Item Form */}
-                    <div className="lg:col-span-1 border border-black rounded-[25px] p-6 h-fit">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="font-modak text-2xl">{editingItem ? "Edit Item" : "Add New Item"}</h2>
-                            {editingItem && (
-                                <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
-                                    Cancel
-                                </Button>
+                <Tabs defaultValue="menu" className="w-full">
+                    <TabsList className="mb-8">
+                        <TabsTrigger value="menu">Menu Management</TabsTrigger>
+                        <TabsTrigger value="orders">Purchase History</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="menu">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Add/Edit Item Form */}
+                            <div className="lg:col-span-1 border border-black rounded-[25px] p-6 h-fit">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="font-modak text-2xl">{editingItem ? "Edit Item" : "Add New Item"}</h2>
+                                    {editingItem && (
+                                        <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+                                            Cancel
+                                        </Button>
+                                    )}
+                                </div>
+                                <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Item name" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="price"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Price</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" placeholder="Price" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="category"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Category</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select category" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Meal Set">Meal Set</SelectItem>
+                                                            <SelectItem value="Snack Set">Snack Set</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="image"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Image</FormLabel>
+                                                    <FormControl>
+                                                        <div className="space-y-2">
+                                                            <Input placeholder="Image URL (https://...)" {...field} />
+                                                            <div className="text-center text-sm text-gray-500">- OR -</div>
+                                                            <Input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (file) {
+                                                                        form.setValue("image", "");
+                                                                    }
+                                                                }}
+                                                                id="file-upload"
+                                                            />
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={createMutation.isPending || updateMutation.isPending}>
+                                            {(createMutation.isPending || updateMutation.isPending) ? (
+                                                <Loader2 className="animate-spin mr-2" />
+                                            ) : (
+                                                editingItem ? <Pencil className="mr-2" /> : <Plus className="mr-2" />
+                                            )}
+                                            {editingItem ? "Update Item" : "Add Item"}
+                                        </Button>
+                                    </form>
+                                </Form>
+                            </div>
+
+                            {/* Item List */}
+                            <div className="lg:col-span-2 space-y-4">
+                                <h2 className="font-modak text-2xl mb-6">Menu Items</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {menuItems?.map((item) => (
+                                        <div key={item.id} className="flex items-center gap-4 p-4 border border-black rounded-xl">
+                                            <img src={item.image} alt={item.name} className="w-16 h-16 object-contain bg-gray-100 rounded-lg" />
+                                            <div className="flex-1">
+                                                <h3 className="font-bold">{item.name}</h3>
+                                                <p className="text-sm text-gray-500">{item.category} - Rp {item.price.toLocaleString()}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => handleEdit(item)}
+                                                >
+                                                    <Pencil size={16} />
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    onClick={() => deleteMutation.mutate(item.id)}
+                                                    disabled={deleteMutation.isPending}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="orders">
+                        <div className="bg-white border border-black rounded-[25px] p-6">
+                            <h2 className="font-modak text-2xl mb-6">Purchase History</h2>
+                            {isLoadingOrders ? (
+                                <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Order ID</TableHead>
+                                            <TableHead>Customer</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Total</TableHead>
+                                            <TableHead>Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {orders?.map((order) => (
+                                            <TableRow key={order.id}>
+                                                <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold">{order.users?.username || 'Unknown'}</span>
+                                                        <span className="text-xs text-gray-500">{order.users?.email}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                                                <TableCell className="font-bold text-[#FF7A00]">
+                                                    Rp {order.total_price.toLocaleString()}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={order.status === 'cancelled' ? 'destructive' : 'default'}>
+                                                        {order.status}
+                                                    </Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             )}
                         </div>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Item name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="price"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Price</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="Price" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="category"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Category</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select category" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="Meal Set">Meal Set</SelectItem>
-                                                    <SelectItem value="Snack Set">Snack Set</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="image"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Image</FormLabel>
-                                            <FormControl>
-                                                <div className="space-y-2">
-                                                    <Input placeholder="Image URL (https://...)" {...field} />
-                                                    <div className="text-center text-sm text-gray-500">- OR -</div>
-                                                    <Input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                form.setValue("image", "");
-                                                            }
-                                                        }}
-                                                        id="file-upload"
-                                                    />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={createMutation.isPending || updateMutation.isPending}>
-                                    {(createMutation.isPending || updateMutation.isPending) ? (
-                                        <Loader2 className="animate-spin mr-2" />
-                                    ) : (
-                                        editingItem ? <Pencil className="mr-2" /> : <Plus className="mr-2" />
-                                    )}
-                                    {editingItem ? "Update Item" : "Add Item"}
-                                </Button>
-                            </form>
-                        </Form>
-                    </div>
-
-                    {/* Item List */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <h2 className="font-modak text-2xl mb-6">Menu Items</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {menuItems?.map((item) => (
-                                <div key={item.id} className="flex items-center gap-4 p-4 border border-black rounded-xl">
-                                    <img src={item.image} alt={item.name} className="w-16 h-16 object-contain bg-gray-100 rounded-lg" />
-                                    <div className="flex-1">
-                                        <h3 className="font-bold">{item.name}</h3>
-                                        <p className="text-sm text-gray-500">{item.category} - Rp {item.price.toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => handleEdit(item)}
-                                        >
-                                            <Pencil size={16} />
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            onClick={() => deleteMutation.mutate(item.id)}
-                                            disabled={deleteMutation.isPending}
-                                        >
-                                            <Trash2 size={16} />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                    </TabsContent>
+                </Tabs>
             </main>
             <Footer />
         </div>

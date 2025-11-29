@@ -67,6 +67,7 @@ export default function Menu() {
             {mealSetItems.map((item) => (
               <MenuItem
                 key={item.id}
+                id={item.id}
                 name={item.name}
                 price={formatPrice(item.price)}
                 image={item.image}
@@ -89,6 +90,7 @@ export default function Menu() {
             {snackSetItems.map((item) => (
               <MenuItem
                 key={item.id}
+                id={item.id}
                 name={item.name}
                 price={formatPrice(item.price)}
                 image={item.image}

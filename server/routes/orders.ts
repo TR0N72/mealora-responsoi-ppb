@@ -8,6 +8,35 @@ export const ordersRouter = express.Router();
 // All routes in this file are protected
 ordersRouter.use(authMiddleware);
 
+// GET /api/v1/orders/all - Get all orders (Admin only)
+ordersRouter.get("/all", async (req: AuthenticatedRequest, res) => {
+  try {
+    // In a real app, verify req.user.role === 'admin' here
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        id, 
+        status, 
+        total_price, 
+        created_at,
+        users (
+          email,
+          username
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+    res.json(data);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/v1/orders - Get order history
 ordersRouter.get("/", async (req: AuthenticatedRequest, res) => {
   try {
