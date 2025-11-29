@@ -6,11 +6,13 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
+import PaymentModal from "@/components/PaymentModal";
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, totalPrice, totalItems, clearCart } = useCart();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const formatPrice = (price: number) => {
     return `Rp ${(price / 1000).toLocaleString('id-ID')}K`;
@@ -26,6 +28,13 @@ export default function Cart() {
       });
       return;
     }
+
+    setPaymentModalOpen(true);
+  };
+
+  const processPayment = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
     setLoading(true);
     try {
@@ -62,6 +71,7 @@ export default function Cart() {
       });
     } finally {
       setLoading(false);
+      setPaymentModalOpen(false);
     }
   };
 
@@ -166,6 +176,13 @@ export default function Cart() {
         </div>
       </main>
       <Footer />
+      <PaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        totalPrice={totalPrice}
+        onConfirm={processPayment}
+        loading={loading}
+      />
     </div>
   );
 }
