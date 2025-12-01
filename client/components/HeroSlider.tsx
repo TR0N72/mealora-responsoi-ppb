@@ -5,18 +5,13 @@ import LazyImage from "./LazyImage";
 const slides = [
   {
     id: 1,
-    image: "https://api.builder.io/api/v1/image/assets/TEMP/0e25bcfddc22119b2f854e45d6d7515cd63848dc?width=2546",
-    alt: "Delicious meal prep containers"
+    image: "/assets/hero-slide-1.png",
+    alt: "Big Deals! June 10 & 11 2024 only"
   },
   {
     id: 2,
-    image: "https://api.builder.io/api/v1/image/assets/TEMP/0e25bcfddc22119b2f854e45d6d7515cd63848dc?width=2546",
-    alt: "Fresh ingredients"
-  },
-  {
-    id: 3,
-    image: "https://api.builder.io/api/v1/image/assets/TEMP/0e25bcfddc22119b2f854e45d6d7515cd63848dc?width=2546",
-    alt: "Catering setup"
+    image: "/assets/hero-slide-2.png",
+    alt: "Mealora healthy meal prep"
   }
 ];
 
