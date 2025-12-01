@@ -1,22 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import LazyImage from "./LazyImage";
 
 const slides = [
   {
     id: 1,
-    image: "/assets/hero-slide-1.png",
-    alt: "Big Deals! June 10 & 11 2024 only"
+    image: "/assets/hero-slide-1.jpg",
+    alt: "Healthy meal prep with broccoli and chicken"
   },
   {
     id: 2,
     image: "/assets/hero-slide-2.png",
-    alt: "Mealora healthy meal prep"
+    alt: "Big Deals! June 10 & 11 2024 only"
+  },
+  {
+    id: 3,
+    image: "/assets/hero-slide-3.png",
+    alt: "Mealora healthy meal prep variety"
   }
 ];
 
 export default function HeroSlider() {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(timer);
+  }, []);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
