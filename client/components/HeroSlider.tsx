@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import LazyImage from "./LazyImage";
 
 const slides = [
@@ -41,12 +42,23 @@ export default function HeroSlider() {
 
   return (
     <div className="relative w-full max-w-[1273px] mx-auto px-4">
-      <div className="relative aspect-[1273/765] rounded-[25px] overflow-hidden">
-        <LazyImage
-          src={slides[currentSlide].image}
-          alt={slides[currentSlide].alt}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative aspect-[1273/765] rounded-[25px] overflow-hidden bg-gray-100">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full"
+          >
+            <LazyImage
+              src={slides[currentSlide].image}
+              alt={slides[currentSlide].alt}
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        </AnimatePresence>
 
         <button
           onClick={prevSlide}
