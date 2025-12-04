@@ -41,6 +41,8 @@ menuRouter.get(
   query("date").optional().isISO8601().toDate(),
   query("dietary_tags").optional().isArray(),
   query("category").optional().isString(),
+  query("page").optional().isInt({ min: 1 }).toInt(),
+  query("limit").optional().isInt({ min: 1 }).toInt(),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -48,16 +50,15 @@ menuRouter.get(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { date, dietary_tags, category } = req.query;
+      const { date, dietary_tags, category, page = 1, limit = 100 } = req.query;
 
-      let queryBuilder = supabase.from("menus").select("*");
+      // Calculate pagination range
+      const from = (Number(page) - 1) * Number(limit);
+      const to = from + Number(limit) - 1;
+
+      let queryBuilder = supabase.from("menus").select("*", { count: 'exact' });
 
       if (date) {
-        // Ensure date is handled correctly (supabase expects string for DATE types usually)
-        // If date is a Date object, toISOString() gives full timestamp.
-        // If column is DATE, we might want YYYY-MM-DD.
-        // For now let's trust supabase-js handles Date or use the string if it wasn't converted?
-        // express-validator toDate() converts to Date.
         queryBuilder = queryBuilder.eq("available_date", (date as Date).toISOString());
       }
 
@@ -69,22 +70,26 @@ menuRouter.get(
         queryBuilder = queryBuilder.eq("category", category);
       }
 
-      const { data, error } = await queryBuilder;
+      // Apply pagination
+      queryBuilder = queryBuilder.range(from, to);
+
+      const { data, error, count } = await queryBuilder;
 
       if (error) {
         console.error("Supabase error fetching menu:", error);
         return res.status(500).json({ error: error.message, details: error });
       }
 
-      if (!data || data.length === 0) {
-        // Return empty array instead of 404 for list endpoint is often better, but keeping 404 if that's desired.
-        // Actually, returning 404 for "no items" in a list query is sometimes treated as error by clients.
-        // Let's return empty array if it's a search?
-        // The original code returned 404.
-        return res.status(404).json({ message: "No menu items found." });
-      }
-
-      res.json(data);
+      // Return empty array if no data, but with pagination info
+      res.json({
+        data: data || [],
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: count || 0,
+          totalPages: count ? Math.ceil(count / Number(limit)) : 0
+        }
+      });
     } catch (err: any) {
       console.error("Unexpected error in GET /menu:", err);
       res.status(500).json({ message: "Internal server error", error: err.message });
@@ -208,7 +213,7 @@ menuRouter.put(
 
     let finalImage = imageUrl;
     if (req.file) {
-       try {
+      try {
         finalImage = await uploadToSupabase(req.file);
       } catch (error: any) {
         console.error("Upload error:", error);
